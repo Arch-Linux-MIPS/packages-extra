@@ -3,13 +3,12 @@
 
 pkgname=ilmbase
 pkgver=2.0.1
-pkgrel=1.1
+pkgrel=2
 depends=('gcc-libs')
 pkgdesc="Base libraries from ILM for OpenEXR"
 arch=(i686 x86_64)
 url="http://www.openexr.com"
 license=('custom')
-options=('!libtool')
 source=(http://download.savannah.nongnu.org/releases/openexr/$pkgname-$pkgver.tar.gz
         non-x86.patch)
 
