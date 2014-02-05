@@ -1,0 +1,31 @@
+# $Id: PKGBUILD 196999 2013-10-21 12:33:19Z tpowa $
+# Maintainer:  Bartłomiej Piotrowski <barthalion@gmail.com>
+# Contributor: Thomas S Hatch <thatch45 at gmail dot com>
+
+pkgname=libaio
+pkgver=0.3.109
+pkgrel=7.1
+pkgdesc="The Linux-native asynchronous I/O facility (aio) library"
+arch=('i686' 'x86_64')
+url="http://lse.sourceforge.net/io/aio.html"
+license=('LGPL')
+source=(http://ftp.de.debian.org/debian/pool/main/liba/$pkgname/${pkgname}_${pkgver}.orig.tar.gz
+	'libaio-0.3.109-arches.patch')
+md5sums=('435a5b16ca6198eaf01155263d855756'
+	 'aba1bd823ca5279a8622754a9500cb10')
+
+prepare() {
+  cd "$srcdir/$pkgname-$pkgver"
+  patch -p1 <${srcdir}/libaio-0.3.109-arches.patch
+}
+
+build() {
+  cd "$srcdir/$pkgname-$pkgver"
+  make
+}
+
+package() {
+  cd "$srcdir/$pkgname-$pkgver"
+  make prefix="$pkgdir/usr" install
+}
+
