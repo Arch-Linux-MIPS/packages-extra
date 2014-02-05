@@ -4,7 +4,7 @@
 
 pkgname=fftw
 pkgver=3.3.3
-pkgrel=2.1
+pkgrel=2.2
 pkgdesc="A library for computing the discrete Fourier transform (DFT)"
 arch=('i686' 'x86_64')
 license=('GPL2')
@@ -37,7 +37,7 @@ build() {
 
   # build double precision
   cd ${srcdir}/${pkgname}-${pkgver}-double
-  $CONFIGURE --enable-sse2
+  $CONFIGURE
   make
 
   # build & install long double precission
@@ -47,7 +47,7 @@ build() {
 
   # build & install single precision
   cd ${srcdir}/${pkgname}-${pkgver}-single
-  $CONFIGURE --enable-float --enable-sse
+  $CONFIGURE --enable-float
   make
 }
 
