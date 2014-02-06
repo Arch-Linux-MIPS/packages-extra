@@ -1,0 +1,34 @@
+diff -u -r a/apps/codecs/libmad/fixed.h b/apps/codecs/libmad/fixed.h
+--- a/apps/codecs/libmad/fixed.h
++++ b/apps/codecs/libmad/fixed.h
+@@ -292,6 +292,21 @@
+ 
+ # elif defined(FPM_MIPS)
+ 
++#if defined (__GNUC__) && defined (__GNUC_MINOR__) 
++#define __GNUC_PREREQ(maj, min) ((__GNUC__ << 16) + __GNUC_MINOR__ >= ((maj) << 16) + (min)) 
++#else 
++#define __GNUC_PREREQ(maj, min)  0 
++#endif 
++
++#if __GNUC_PREREQ(4,4) 
++typedef unsigned int u64_di_t __attribute__ ((mode (DI))); 
++# define MAD_F_MLX(hi, lo, x, y) \
++do { \
++   u64_di_t __ll = (u64_di_t) (x) * (y); \
++   hi = __ll >> 32; \
++   lo = __ll; \
++}while(0)
++#else
+ /*
+  * This MIPS version is fast and accurate; the disposition of the least
+  * significant bit depends on OPT_ACCURACY via mad_f_scale64().
+@@ -321,6 +336,8 @@
+          : "%r" ((x) >> 12), "r" ((y) >> 16))
+ #  define MAD_F_MLZ(hi, lo)  ((mad_fixed_t) (lo))
+ # endif
++
++#endif /* __GNU_PREREQ(4,4) */ 
+ 
+ # if defined(OPT_SPEED)
+ #  define mad_f_scale64(hi, lo)  \
