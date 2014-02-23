@@ -4,7 +4,7 @@
 pkgbase='ocaml'
 pkgname=('ocaml' 'ocaml-compiler-libs')
 pkgver=4.01.0
-pkgrel=3.1
+pkgrel=3.2
 pkgdesc="A functional language with OO extensions"
 arch=('i686' 'x86_64')
 license=('LGPL2.1' 'custom: QPL-1.0')
@@ -46,9 +46,15 @@ optdepends=()
   # Install compiler libraries
   local compiler_libs="${pkgdir}/usr/lib/ocaml/compiler-libs"
   mkdir -p "$compiler_libs"/{parsing,typing,utils}
-  cp parsing/*.{cmi,cmo,cmx,ml,mli,mll,o} "$compiler_libs"/parsing
-  cp typing/*.{cmi,cmo,cmx,ml,mli,o} "$compiler_libs"/typing
-  cp utils/*.{cmi,cmo,cmx,ml,mli,o} "$compiler_libs"/utils
+  if [ "$CARCH" = "mips32r2el" ]; then
+    cp parsing/*.{cmi,cmo,ml,mli,mll} "$compiler_libs"/parsing
+    cp typing/*.{cmi,cmo,ml,mli} "$compiler_libs"/typing
+    cp utils/*.{cmi,cmo,ml,mli} "$compiler_libs"/utils
+  else
+    cp parsing/*.{cmi,cmo,cmx,ml,mli,mll,o} "$compiler_libs"/parsing
+    cp typing/*.{cmi,cmo,cmx,ml,mli,o} "$compiler_libs"/typing
+    cp utils/*.{cmi,cmo,cmx,ml,mli,o} "$compiler_libs"/utils
+  fi
   # duplicated by installation
   rm -f "$compiler_libs"/typing/outcometree.{cmi,mli}
 
