@@ -4,7 +4,7 @@
 
 pkgname=elfutils
 pkgver=0.158
-pkgrel=1.1
+pkgrel=1.2
 pkgdesc="Libraries and utilities to handle ELF object files and DWARF debugging information"
 arch=('i686' 'x86_64')
 url="https://fedorahosted.org/elfutils/"
@@ -29,6 +29,8 @@ prepare() {
 
 build() {
   cd ${pkgname}-${pkgver}
+
+  autoreconf -fis
 
   CFLAGS+=" -g"  # required for test-suite success
   ./configure --prefix=/usr --program-prefix="eu-"
