@@ -1,0 +1,213 @@
+From eaac51ed358825fe8e6a005bc9cc0fa0355beda3 Mon Sep 17 00:00:00 2001
+From: Markos Chandras <markos.chandras@imgtec.com>
+Date: Mon, 2 Dec 2013 15:26:51 +0000
+Subject: [PATCH 2/2] arch: Add support for MIPS Little Endian
+
+Add support for MIPS 32-bit (O32 ABI) Little Endian
+
+Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+---
+ include/seccomp.h.in          | 1 +
+ src/arch-mips.c               | 7 +++++++
+ src/arch-mips.h               | 1 +
+ src/arch.c                    | 8 ++++++++
+ tests/16-sim-arch_basic.c     | 6 ++++++
+ tests/23-sim-arch_all_basic.c | 6 ++++++
+ tests/regression              | 4 ++--
+ tools/scmp_arch_detect.c      | 3 +++
+ tools/scmp_bpf_sim.c          | 2 ++
+ tools/scmp_sys_resolver.c     | 2 ++
+ 10 files changed, 38 insertions(+), 2 deletions(-)
+
+diff --git a/include/seccomp.h.in b/include/seccomp.h.in
+index 6d7dece..8fcfc2c 100644
+--- a/include/seccomp.h.in
++++ b/include/seccomp.h.in
+@@ -125,6 +125,7 @@ struct scmp_arg_cmp {
+  * The MIPS architecture token
+  */
+ #define SCMP_ARCH_MIPS		AUDIT_ARCH_MIPS
++#define SCMP_ARCH_MIPSEL	AUDIT_ARCH_MIPSEL
+ 
+ /**
+  * Convert a syscall name into the associated syscall number
+diff --git a/src/arch-mips.c b/src/arch-mips.c
+index 9787f4b..16c4090 100644
+--- a/src/arch-mips.c
++++ b/src/arch-mips.c
+@@ -34,3 +34,10 @@ const struct arch_def arch_def_mips = {
+ 	.size = ARCH_SIZE_32,
+ 	.endian = ARCH_ENDIAN_BIG,
+ };
++
++const struct arch_def arch_def_mipsel = {
++	.token = SCMP_ARCH_MIPSEL,
++	.token_bpf = AUDIT_ARCH_MIPSEL,
++	.size = ARCH_SIZE_32,
++	.endian = ARCH_ENDIAN_LITTLE,
++};
+diff --git a/src/arch-mips.h b/src/arch-mips.h
+index 52a69e2..22a74b6 100644
+--- a/src/arch-mips.h
++++ b/src/arch-mips.h
+@@ -32,6 +32,7 @@
+ #define mips_arg_count_max		6
+ 
+ extern const struct arch_def arch_def_mips;
++extern const struct arch_def arch_def_mipsel;
+ 
+ int mips_syscall_resolve_name(const char *name);
+ const char *mips_syscall_resolve_num(int num);
+diff --git a/src/arch.c b/src/arch.c
+index e5372ac..7aed3e5 100644
+--- a/src/arch.c
++++ b/src/arch.c
+@@ -49,6 +49,8 @@ const struct arch_def *arch_def_native = &arch_def_x86_64;
+ const struct arch_def *arch_def_native = &arch_def_arm;
+ #elif __MIPSEB /* MIPS Big Endian */
+ const struct arch_def *arch_def_native = &arch_def_mips;
++#elif __MIPSEL /* MIPS Little Endian */
++const struct arch_def *arch_def_native = &arch_def_mipsel;
+ #else
+ #error the arch code needs to know about your machine type
+ #endif /* machine type guess */
+@@ -68,6 +70,7 @@ int arch_valid(uint32_t arch)
+ 	case SCMP_ARCH_X32:
+ 	case SCMP_ARCH_ARM:
+ 	case SCMP_ARCH_MIPS:
++	case SCMP_ARCH_MIPSEL:
+ 		return 0;
+ 	}
+ 
+@@ -94,6 +97,8 @@ const struct arch_def *arch_def_lookup(uint32_t token)
+ 		return &arch_def_arm;
+ 	case SCMP_ARCH_MIPS:
+ 		return &arch_def_mips;
++	case SCMP_ARCH_MIPSEL:
++		return &arch_def_mipsel;
+ 	}
+ 
+ 	return NULL;
+@@ -119,6 +124,7 @@ int arch_arg_count_max(const struct arch_def *arch)
+ 	case SCMP_ARCH_ARM:
+ 		return arm_arg_count_max;
+ 	case SCMP_ARCH_MIPS:
++	case SCMP_ARCH_MIPSEL:
+ 		return mips_arg_count_max;
+ 	}
+ 
+@@ -187,6 +193,7 @@ int arch_syscall_resolve_name(const struct arch_def *arch, const char *name)
+ 	case SCMP_ARCH_ARM:
+ 		return arm_syscall_resolve_name(name);
+ 	case SCMP_ARCH_MIPS:
++	case SCMP_ARCH_MIPSEL:
+ 		return mips_syscall_resolve_name(name);
+ 	}
+ 
+@@ -215,6 +222,7 @@ const char *arch_syscall_resolve_num(const struct arch_def *arch, int num)
+ 	case SCMP_ARCH_ARM:
+ 		return arm_syscall_resolve_num(num);
+ 	case SCMP_ARCH_MIPS:
++	case SCMP_ARCH_MIPSEL:
+ 		return mips_syscall_resolve_num(num);
+ 	}
+ 
+diff --git a/tests/16-sim-arch_basic.c b/tests/16-sim-arch_basic.c
+index 8facdce..18a16e3 100644
+--- a/tests/16-sim-arch_basic.c
++++ b/tests/16-sim-arch_basic.c
+@@ -66,6 +66,12 @@ int main(int argc, char *argv[])
+ 			goto out;
+ 	}
+ 
++	if (seccomp_arch_exist(ctx, SCMP_ARCH_MIPSEL)) {
++		rc = seccomp_arch_add(ctx, SCMP_ARCH_MIPSEL);
++		if (rc != 0)
++			goto out;
++	}
++
+ 	rc = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(read), 1,
+ 			      SCMP_A0(SCMP_CMP_EQ, STDIN_FILENO));
+ 	if (rc != 0)
+diff --git a/tests/23-sim-arch_all_basic.c b/tests/23-sim-arch_all_basic.c
+index b0a9869..33a7452 100644
+--- a/tests/23-sim-arch_all_basic.c
++++ b/tests/23-sim-arch_all_basic.c
+@@ -65,6 +65,12 @@ int main(int argc, char *argv[])
+ 			goto out;
+ 	}
+ 
++	if (seccomp_arch_exist(ctx, SCMP_ARCH_MIPSEL)) {
++		rc = seccomp_arch_add(ctx, SCMP_ARCH_MIPSEL);
++		if (rc != 0)
++			goto out;
++	}
++
+ 	rc = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(read), 1,
+ 			      SCMP_A0(SCMP_CMP_EQ, STDIN_FILENO));
+ 	if (rc != 0)
+diff --git a/tests/regression b/tests/regression
+index 059fe8c..6f9fc25 100755
+--- a/tests/regression
++++ b/tests/regression
+@@ -21,7 +21,7 @@
+ # along with this library; if not, see <http://www.gnu.org/licenses>.
+ #
+ 
+-GLBL_ARCH_SUPPORT="x86 x86_64 x32 arm mips"
++GLBL_ARCH_SUPPORT="x86 x86_64 x32 arm mips mipsel"
+ 
+ GLBL_SYS_ARCH="../tools/scmp_arch_detect"
+ GLBL_SYS_RESOLVER="../tools/scmp_sys_resolver"
+@@ -628,7 +628,7 @@ function run_test_live() {
+ 	#  161: TRAP
+ 	#  162: TRACE (currently unsupported)
+ 	#  163: ERRNO
+-	if [[ $arch == "mips" ]]; then
++	if [[ $arch == "mips" || $arch == "mipsel" ]]; then
+ 		exkill=140
+ 	else
+ 		exkill=159
+diff --git a/tools/scmp_arch_detect.c b/tools/scmp_arch_detect.c
+index f562878..02d291b 100644
+--- a/tools/scmp_arch_detect.c
++++ b/tools/scmp_arch_detect.c
+@@ -81,6 +81,9 @@ int main(int argc, char *argv[])
+ 		case SCMP_ARCH_MIPS:
+ 			printf("mips\n");
+ 			break;
++		case SCMP_ARCH_MIPSEL:
++			printf("mipsel\n");
++			break;
+ 		default:
+ 			printf("unknown\n");
+ 		}
+diff --git a/tools/scmp_bpf_sim.c b/tools/scmp_bpf_sim.c
+index 3bc3922..d4c3946 100644
+--- a/tools/scmp_bpf_sim.c
++++ b/tools/scmp_bpf_sim.c
+@@ -241,6 +241,8 @@ int main(int argc, char *argv[])
+ 				sys_data.arch = AUDIT_ARCH_ARM;
+ 			else if (strcmp(optarg, "mips") == 0)
+ 				sys_data.arch = AUDIT_ARCH_MIPS;
++			else if (strcmp(optarg, "mipsel") == 0)
++				sys_data.arch = AUDIT_ARCH_MIPSEL;
+ 			else
+ 				exit_fault(EINVAL);
+ 			break;
+diff --git a/tools/scmp_sys_resolver.c b/tools/scmp_sys_resolver.c
+index c7dcb78..108360f 100644
+--- a/tools/scmp_sys_resolver.c
++++ b/tools/scmp_sys_resolver.c
+@@ -73,6 +73,8 @@ int main(int argc, char *argv[])
+ 				arch = &arch_def_arm;
+ 			else if (strcmp(optarg, "mips") == 0)
+ 				arch = &arch_def_mips;
++			else if (strcmp(optarg, "mipsel") == 0)
++				arch = &arch_def_mipsel;
+ 			else
+ 				exit_usage(argv[0]);
+ 			break;
+-- 
+1.9.0
+
